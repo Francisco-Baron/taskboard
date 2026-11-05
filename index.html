@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Daily Action Items</title>
+<meta name="robots" content="noindex, nofollow">
+<style>
+:root { color-scheme: light; }
+* { box-sizing: border-box; }
+body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: #f6f7f9; color: #1d2230; font-size: 13.5px; line-height: 1.4; }
+.wrap { max-width: 1280px; margin: 0 auto; padding: 16px 16px 70px; }
+.hidden { display: none !important; }
+button { font: inherit; }
+
+/* header */
+header.top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
+h1.title { font-size: 19px; margin: 0; font-weight: 750; letter-spacing: -0.01em; }
+.subtle { color: #6b7280; font-size: 12px; margin-top: 2px; }
+.top-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+#status { font-size: 12px; color: #6b7280; display: flex; align-items: center; gap: 6px; }
+#status.saving, #status.pending { color: #b45309; }
+#status.saved { color: #15803d; }
+#status.error { color: #b91c1c; font-weight: 600; }
+
+button.act { font-size: 12px; font-weight: 600; padding: 5px 10px; border-radius: 7px; border: 1px solid #d7dae2; background: #fff; color: #374151; cursor: pointer; white-space: nowrap; }
+button.act:hover { background: #f3f4f6; }
+button.act.primary { background: #15803d; border-color: #15803d; color: #fff; }
+button.act.primary:hover { background: #136c34; }
+button.act.ghost { color: #6b7280; }
+button.act.danger { color: #b91c1c; border-color: #f0d2d2; }
+button.act.danger:hover { background: #fef2f2; }
+button.act.small { padding: 3px 8px; font-size: 11.5px; }
+button.act:disabled { opacity: .5; cursor: default; }
+
+/* stats + chips */
+.chips { display: flex; gap: 6px; flex-wrap: wrap; margin: 8px 0 10px; }
+.chip { background: #fff; border: 1px solid #e6e8ee; border-radius: 999px; padding: 4px 10px; font-size: 12px; color: #374151; display: inline-flex; align-items: center; gap: 5px; }
+.chip b { font-weight: 750; }
+.chip.new { background: #eff6ff; border-color: #bfdbfe; color: #1d4ed8; }
+.chip.alert { background: #fef2f2; border-color: #fecaca; color: #b91c1c; }
+.chip.warn { background: #fffbeb; border-color: #fde68a; color: #92620a; }
+.chip.good { background: #f0fdf4; border-color: #bbf7d0; color: #166534; }
+
+/* filter bar */
+.filters { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; background: #fff; border: 1px solid #e6e8ee; border-radius: 10px; padding: 7px 8px; margin-bottom: 12px; }
+.filters input[type=search] { flex: 1 1 220px; min-width: 160px; font: inherit; font-size: 13px; padding: 6px 9px; border: 1px solid #d7dae2; border-radius: 7px; }
+.tog { font-size: 12px; font-weight: 600; padding: 5px 10px; border-radius: 999px; border: 1px solid #d7dae2; background: #fff; color: #4b5563; cursor: pointer; }
+.tog.on { background: #1d2230; border-color: #1d2230; color: #fff; }
+
+/* panels */
+.panel { background: #fff; border: 1px solid #e6e8ee; border-radius: 12px; padding: 10px 12px; margin-bottom: 14px; }
+.panel-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.panel-head h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: #4b5563; margin: 0; font-weight: 800; }
+.panel-head .hint { font-size: 11.5px; color: #9aa1ad; }
+.panel-head .spacer { flex: 1; }
+.panel.focus { border-color: #c7d2fe; background: #fbfcff; }
+.panel.review { border-color: #fde68a; background: #fffdf5; }
+
+.frow { display: flex; align-items: center; gap: 8px; padding: 5px 4px; border-radius: 7px; }
+.frow:hover { background: #f3f4f6; }
+.frow .ftext { flex: 1; min-width: 0; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.reason { font-size: 10.5px; font-weight: 700; padding: 2px 7px; border-radius: 6px; white-space: nowrap; }
+.reason.overdue { background: #fee2e2; color: #b91c1c; }
+.reason.due { background: #fef3c7; color: #92620a; }
+.reason.high { background: #fee2e2; color: #b91c1c; }
+.reason.aging { background: #ffedd5; color: #c2410c; }
+.reason.new { background: #dbeafe; color: #1d4ed8; }
+.reason.ongoing { background: #dcfce7; color: #166534; }
+.reason.flag { background: #fef3c7; color: #92620a; }
+.reason.stale { background: #f3f4f6; color: #4b5563; }
+.rrow { display: flex; align-items: center; gap: 8px; padding: 6px 4px; border-top: 1px solid #f3eccf; }
+.rrow:first-of-type { border-top: 0; }
+.rrow .rtext { flex: 1; min-width: 0; }
+.rrow .rsub { font-size: 11.5px; color: #8a92a0; }
+
+/* columns */
+.board-cols { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; align-items: start; margin-bottom: 18px; }
+@media (max-width: 680px) { .board-cols { grid-template-columns: 1fr; } }
+.col { min-width: 0; }
+.col-head { display: flex; align-items: center; gap: 7px; margin: 0 2px 9px; padding-bottom: 7px; border-bottom: 2px solid #e6e8ee; cursor: pointer; user-select: none; }
+.col-head h2 { font-size: 13px; margin: 0; font-weight: 800; }
+.col-head .caret { font-size: 10px; color: #9aa1ad; transition: transform .15s; }
+.col.collapsed .caret { transform: rotate(-90deg); }
+.col-head .count { font-size: 12px; color: #6b7280; font-weight: 700; margin-left: auto; }
+.mini { font-size: 10.5px; font-weight: 700; padding: 1px 6px; border-radius: 999px; }
+.mini.aging { background: #ffedd5; color: #c2410c; }
+.mini.snz { background: #f3f4f6; color: #6b7280; }
+.col.collapsed .col-body { display: none; }
+.sub-head { display: flex; align-items: center; gap: 6px; margin: 14px 2px 8px; font-size: 10.5px; text-transform: uppercase; letter-spacing: .05em; font-weight: 750; color: #7e22ce; }
+.sub-head.snz { color: #6b7280; }
+.sub-head::after { content: ""; height: 1px; background: #ecdcfb; flex: 1; }
+.sub-head.snz::after { background: #e6e8ee; }
+.new-divider { display: flex; align-items: center; gap: 8px; margin: 2px 2px 9px; color: #9aa1ad; font-size: 10.5px; text-transform: uppercase; letter-spacing: .05em; font-weight: 700; }
+.new-divider::before, .new-divider::after { content: ""; height: 1px; background: #e6e8ee; flex: 1; }
+.empty { color: #9aa1ad; font-size: 12.5px; padding: 6px 2px; }
+
+/* cards */
+.card { background: #fff; border: 1px solid #e6e8ee; border-left: 4px solid #e6e8ee; border-radius: 9px; padding: 8px 10px; margin-bottom: 7px; cursor: pointer; transition: box-shadow .12s; }
+.card:hover { box-shadow: 0 1px 4px rgba(17,24,39,.08); }
+.card.aging { border-left-color: #f59e0b; }
+.card.stale { border-left-color: #dc2626; }
+.card.isnew { border-left-color: #2563eb; }
+.card.overdue { border-left-color: #dc2626; }
+.card.open { cursor: default; box-shadow: 0 2px 10px rgba(17,24,39,.10); border-color: #d7dae2; }
+.card.done { opacity: .7; }
+.card.flash { animation: flash 1.2s ease-out; }
+@keyframes flash { from { background: #eff6ff; } to { background: #fff; } }
+.row1 { display: flex; align-items: flex-start; gap: 6px; }
+.badges { display: flex; gap: 4px; flex-shrink: 0; padding-top: 1px; }
+.ctext { flex: 1; min-width: 0; font-size: 13px; color: #1d2230; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.card.open .ctext { -webkit-line-clamp: unset; display: block; }
+.card.done .ctext { text-decoration: line-through; }
+.right { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; flex-shrink: 0; }
+.age { font-size: 10.5px; font-weight: 650; color: #9aa1ad; white-space: nowrap; }
+.age.aging { color: #b45309; } .age.stale { color: #dc2626; }
+.duechip { font-size: 10.5px; font-weight: 700; padding: 1px 6px; border-radius: 6px; background: #f3f4f6; color: #4b5563; white-space: nowrap; }
+.duechip.soon { background: #fef3c7; color: #92620a; }
+.duechip.overdue { background: #fee2e2; color: #b91c1c; }
+.row2 { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 4px; font-size: 11.5px; color: #8a92a0; }
+.row2 .ctx { font-style: italic; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+.deleg { color: #7e22ce; font-weight: 650; font-style: normal; }
+.nudge { font-size: 10.5px; font-weight: 700; padding: 1px 6px; border-radius: 6px; background: #f3e8ff; color: #7e22ce; }
+.ico { font-style: normal; }
+
+.badge { font-size: 10.5px; font-weight: 750; padding: 2px 6px; border-radius: 6px; letter-spacing: .02em; white-space: nowrap; cursor: pointer; }
+.badge.p-high { background: #fee2e2; color: #b91c1c; }
+.badge.p-med { background: #fef3c7; color: #92620a; }
+.badge.p-low { background: #e5e7eb; color: #4b5563; }
+.newbadge { font-size: 9.5px; font-weight: 800; letter-spacing: .06em; padding: 2px 6px; border-radius: 6px; background: #2563eb; color: #fff; }
+.pill { font-size: 10px; font-weight: 650; padding: 2px 6px; border-radius: 999px; text-transform: uppercase; letter-spacing: .04em; white-space: nowrap; }
+.pill.ongoing { background: #dcfce7; color: #166534; }
+.pill.delegated { background: #f3e8ff; color: #7e22ce; }
+.pill.done { background: #e5e7eb; color: #4b5563; }
+.tag-src { font-size: 10.5px; color: #6b7280; background: #f1f3f7; padding: 1px 6px; border-radius: 6px; }
+
+/* expanded detail */
+.detail { margin-top: 9px; padding-top: 9px; border-top: 1px dashed #e6e8ee; cursor: default; }
+.actions { display: flex; gap: 5px; flex-wrap: wrap; }
+.actions .push { margin-left: auto; }
+.fields { display: grid; grid-template-columns: auto 1fr; gap: 6px 8px; align-items: center; margin-top: 9px; font-size: 12px; color: #4b5563; }
+.fields label { font-weight: 650; color: #6b7280; }
+.fields input[type=date], .inline input[type=text], .inline input[type=date] { font: inherit; font-size: 12px; padding: 4px 7px; border: 1px solid #d7dae2; border-radius: 7px; }
+.fields .frow2 { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+textarea.notes { width: 100%; min-height: 54px; resize: vertical; font: inherit; font-size: 12.5px; padding: 6px 8px; border: 1px solid #d7dae2; border-radius: 7px; margin-top: 8px; }
+.inline { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-top: 8px; padding: 7px; background: #f8fafc; border-radius: 8px; }
+.inline .lbl { font-size: 11.5px; font-weight: 650; color: #6b7280; }
+a.link { color: #1d4ed8; text-decoration: none; font-weight: 600; }
+a.link:hover { text-decoration: underline; }
+
+/* done */
+.done-head { display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; margin: 4px 2px 8px; }
+.done-head h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: #6b7280; margin: 0; font-weight: 800; }
+.done-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+@media (max-width: 680px) { .done-grid { grid-template-columns: 1fr; } }
+
+/* toast + modal */
+#toast { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); background: #1d2230; color: #fff; padding: 9px 12px; border-radius: 10px; font-size: 13px; display: flex; gap: 12px; align-items: center; box-shadow: 0 6px 20px rgba(0,0,0,.2); z-index: 20; }
+#toast button { background: transparent; border: 0; color: #93c5fd; font-weight: 700; cursor: pointer; font-size: 13px; }
+#modal { position: fixed; inset: 0; background: rgba(17,24,39,.35); display: flex; align-items: center; justify-content: center; z-index: 30; padding: 16px; }
+.modal-box { background: #fff; border-radius: 12px; width: min(620px, 100%); padding: 16px; box-shadow: 0 10px 40px rgba(0,0,0,.25); }
+.modal-box h3 { margin: 0 0 4px; font-size: 15px; }
+.modal-box .msub { font-size: 12px; color: #6b7280; margin-bottom: 10px; }
+.modal-box textarea { width: 100%; min-height: 150px; font: inherit; font-size: 13px; padding: 8px 10px; border: 1px solid #d7dae2; border-radius: 8px; }
+.modal-box .mact { display: flex; gap: 6px; justify-content: flex-end; margin-top: 10px; }
+#bigmsg { padding: 40px 10px; text-align: center; color: #6b7280; }
+.modal-box input[type=password] { width: 100%; font: inherit; font-size: 13px; padding: 8px 10px; border: 1px solid #d7dae2; border-radius: 8px; }
+.modal-box ol { margin: 6px 0 10px 18px; padding: 0; font-size: 12.5px; color: #374151; }
+.modal-box .warn { font-size: 12px; color: #92620a; background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 7px 9px; margin: 8px 0; }
+.foot { margin-top: 20px; font-size: 11.5px; color: #aab0bb; text-align: center; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1 class="title">Daily Action Items</h1>
+      <div class="subtle" id="sub">Loading…</div>
+    </div>
+    <div class="top-actions">
+      <span id="status"></span>
+      <button class="act" id="btnDupes" title="Flag open items whose wording closely matches another item">Find duplicates</button>
+      <button class="act" id="btnRefresh" title="Reload the latest list from GitHub">↻ Refresh</button>
+      <button class="act ghost" id="btnToken" title="GitHub connection">⚙ GitHub</button>
+    </div>
+  </header>
+
+  <div id="bigmsg" class="hidden"></div>
+  <div id="stats" class="chips"></div>
+
+  <div class="filters" id="filters">
+    <input type="search" id="q" placeholder="Search tasks, context, notes, people…" autocomplete="off">
+    <button class="tog" data-tog="high">High only</button>
+    <button class="tog" data-tog="aging">Aging 7d+</button>
+    <button class="tog" data-tog="ongoing">Ongoing</button>
+    <button class="tog" data-tog="due">Due ≤7d</button>
+    <button class="tog" data-tog="snoozed">Show snoozed</button>
+  </div>
+
+  <div id="board"></div>
+  <div class="foot" id="foot"></div>
+</div>
+<div id="toast" class="hidden"></div>
+<div id="modal" class="hidden"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  // =====================================================================
+  // CONFIG
+  // =====================================================================
+  // Storage: GitHub only. store.json in a PRIVATE repo; every save is a commit made with the
+  // viewer's own fine-grained token (kept in this browser's localStorage, never in this file).
+  var GITHUB = { owner: "Francisco-Baron", repo: "Dailytaskdashboard", path: "store.json", branch: "main" };
+  var API = "https://api.github.com";
+  var TOKEN_KEY = "aib_gh_token";
+  var HISTORY_URL = "https://github.com/" + GITHUB.owner + "/" + GITHUB.repo + "/commits/" + GITHUB.branch + "/" + GITHUB.path;
+
+  var SAVE_DEBOUNCE_MS = 1500;          // batch rapid clicks into one write
+  var STALE_DAYS = 21;                  // untouched "new" items move to Review
+  var AGING_DAYS = 7, OLD_DAYS = 14;
+  var NUDGE_DAYS = 5;                   // delegated items older than this get a check-in nudge
+  var FOCUS_MAX = 7;
+  var DONE_SHOW = 30;
+
+  var PRIO = { high:0, med:1, low:2 };
+  var PRIO_NEXT = { high:"med", med:"low", low:"high" };
+  var SOURCES = [
+    { key:"funding", label:"💰 Partner Funding" },
+    { key:"meeting", label:"📝 Meetings" },
+    { key:"general", label:"📌 General" }
+  ];
+  var SOURCE_KEYS = SOURCES.map(function(s){ return s.key; });
+  var SRC_LABEL = { funding:"Funding", meeting:"Meeting", general:"General" };
+
+  // =====================================================================
+  // SMALL UTILITIES
+  // =====================================================================
+  function $(id){ return document.getElementById(id); }
+  function esc(s){ return (s==null?"":String(s)).replace(/[&<>"']/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]; }); }
+  function clone(o){ return JSON.parse(JSON.stringify(o)); }
+  function pad(n){ return String(n).padStart(2,"0"); }
+  function ymd(d){ return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate()); }
+  function todayStr(){ return ymd(new Date()); }
+  function nowIso(){ return new Date().toISOString(); }
+  function toLocalDay(v){
+    if(!v) return null;
+    if(/^\d{4}-\d{2}-\d{2}$/.test(v)){ var p=v.split("-"); return new Date(+p[0], +p[1]-1, +p[2]); }
+    var d = new Date(v); if(isNaN(d)) return null;
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  }
+  function daysSince(v){
+    var d = toLocalDay(v); if(!d) return 0;
+    var t = toLocalDay(todayStr());
+    return Math.max(0, Math.round((t - d) / 86400000));
+  }
+  function daysUntil(v){
+    var d = toLocalDay(v); if(!d) return null;
+    var t = toLocalDay(todayStr());
+    return Math.round((d - t) / 86400000);
+  }
+  function addDays(n){ var d=new Date(); d.setDate(d.getDate()+n); return ymd(d); }
+  function nextMonday(){ var d=new Date(); var add=((8 - d.getDay()) % 7) || 7; d.setDate(d.getDate()+add); return ymd(d); }
+  function fmtShort(v){ var d=toLocalDay(v); if(!d) return ""; return d.toLocaleDateString([], { month:"short", day:"numeric" }); }
+  function lsGet(k, dflt){ try { var v = localStorage.getItem("aib_"+k); return v==null ? dflt : JSON.parse(v); } catch(e){ return dflt; } }
+  function lsSet(k, v){ try { localStorage.setItem("aib_"+k, JSON.stringify(v)); } catch(e){} }
+
+  // =====================================================================
+  // GITHUB REST (token lives only in this browser)
+  // =====================================================================
+  function getToken(){ try { return localStorage.getItem(TOKEN_KEY) || ""; } catch(e){ return ""; } }
+  function setToken(t){ try { if(t) localStorage.setItem(TOKEN_KEY, t); else localStorage.removeItem(TOKEN_KEY); } catch(e){} }
+  function contentsUrl(){ return API + "/repos/" + GITHUB.owner + "/" + GITHUB.repo + "/contents/" + GITHUB.path; }
+  async function gh(method, url, body){
+    var res = await fetch(url, {
+      method: method, cache: "no-store",
+      headers: { "Authorization": "Bearer " + getToken(), "Accept": "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28" },
+      body: body ? JSON.stringify(body) : undefined
+    });
+    var data = null; try { data = await res.json(); } catch(e){}
+    if(!res.ok){
+      var e = new Error(res.status + " " + ((data && data.message) || res.statusText || "GitHub error"));
+      e.status = res.status; if(res.status === 409) e.conflict = true;
+      throw e;
+    }
+    return data;
+  }
+
+  // =====================================================================
+  // STORAGE ADAPTERS — same interface: load() -> {store, rev}; save(store, rev) -> {rev}
+  // =====================================================================
+  // Optimistic concurrency: every PUT carries the blob sha we last read; if the morning
+  // briefing committed in between, GitHub answers 409 and flush() reloads + replays our edits.
+  function b64utf8(b64){
+    var bin = atob(String(b64).replace(/\s/g, ""));
+    if(typeof TextDecoder === "undefined"){ return decodeURIComponent(escape(bin)); }
+    var bytes = new Uint8Array(bin.length);
+    for(var i=0;i<bin.length;i++) bytes[i] = bin.charCodeAt(i);
+    return new TextDecoder("utf-8").decode(bytes);
+  }
+  function utf8b64(str){
+    if(typeof TextEncoder === "undefined"){ return btoa(unescape(encodeURIComponent(str))); }
+    var bytes = new TextEncoder().encode(str), bin = "";
+    for(var i=0;i<bytes.length;i+=0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i+0x8000));
+    return btoa(bin);
+  }
+  var githubAdapter = {
+    name: "GitHub",
+    load: async function(){
+      // cache-busting query + no-store: never show a stale copy after a save
+      var d = await gh("GET", contentsUrl() + "?ref=" + encodeURIComponent(GITHUB.branch) + "&_=" + Date.now());
+      return { store: JSON.parse(b64utf8(d.content)), rev: d.sha };
+    },
+    save: async function(st, rev){
+      var n = st.meta && st.meta.lastEditCount;
+      var body = { branch: GITHUB.branch, message: "board: " + (n ? n + " edit" + (n > 1 ? "s" : "") : "update"),
+                   content: utf8b64(JSON.stringify(st, null, 1) + "\n") };
+      if(rev) body.sha = rev;
+      var d = await gh("PUT", contentsUrl(), body);
+      return { rev: (d && d.content && d.content.sha) || null };
+    }
+  };
+  function storage(){ return githubAdapter; }
+
+  // =====================================================================
+  // STATE
+  // =====================================================================
+  var store = null, rev = null, lastSyncAt = 0;
+  var ops = [];                 // local edits not yet confirmed saved (replayed onto fresh copies)
+  var saveTimer = null, saving = false, saveError = null;
+  var NEW_KEY = "";
+  var ui = {
+    expanded: {}, panel: {},    // panel[id] = "delegate" | "snooze"
+    collapsed: lsGet("collapsed", {}),
+    doneOpen: lsGet("doneOpen", false),
+    doneAll: false,
+    reviewOpen: lsGet("reviewOpen", true),
+    f: { q:"", high:false, aging:false, ongoing:false, due:false, snoozed: lsGet("showSnoozed", false) }
+  };
+
+  function norm(it){
+    ["dueDate","snoozeUntil","link","flag","touchedAt","delegatedAt","dateDone","delegatedTo"].forEach(function(k){ if(!(k in it)) it[k] = null; });
+    if(typeof it.notes !== "string") it.notes = "";
+    if(SOURCE_KEYS.indexOf(it.source) < 0) it.source = "general";
+    if(!(it.priority in PRIO)) it.priority = "med";
+    if(["new","ongoing","delegated","done"].indexOf(it.status) < 0) it.status = "new";
+    return it;
+  }
+  function normStore(st){
+    if(!st || typeof st !== "object") st = {};
+    if(!Array.isArray(st.items)) st.items = [];
+    st.items.forEach(norm);
+    if(!st.meta || typeof st.meta !== "object") st.meta = {};
+    return st;
+  }
+  // Safety net: remember board-only fields locally. If a writer that doesn't know about them
+  // (e.g. an older morning-task prompt) rewrites the store and drops them, restore on next load.
+  var STASH_FIELDS = ["notes","dueDate","snoozeUntil","flag","touchedAt","delegatedAt","link"];
+  function stashFields(st){
+    var m = {};
+    st.items.forEach(function(it){
+      var o = {}, any = false;
+      STASH_FIELDS.forEach(function(k){ if(it[k] != null && it[k] !== ""){ o[k] = it[k]; any = true; } });
+      if(any) m[it.id] = o;
+    });
+    lsSet("stash", m);
+  }
+  function recoverDropped(raw){
+    var m = lsGet("stash", {}), fixes = [];
+    (raw.items || []).forEach(function(it){
+      var s = m[it.id]; if(!s) return;
+      var f = {}, any = false;
+      for(var k in s){ if(!(k in it)){ f[k] = s[k]; any = true; } }   // only fields that are missing entirely
+      if(any) fixes.push({ t:"patch", id:it.id, f:f });
+    });
+    return fixes;
+  }
+  function find(st, id){ for(var i=0;i<st.items.length;i++){ if(st.items[i].id === id) return st.items[i]; } return null; }
+  function byId(id){ return find(store, id); }
+
+  // ---------------- ops ----------------
+  function applyOp(st, op){
+    if(op.t === "patch"){ var it = find(st, op.id); if(it){ for(var k in op.f) it[k] = op.f[k]; } }
+    else if(op.t === "remove"){ st.items = st.items.filter(function(i){ return i.id !== op.id; }); }
+    else if(op.t === "add"){ if(!find(st, op.item.id)) st.items.push(norm(clone(op.item))); }
+  }
+  function commit(list){
+    if(!Array.isArray(list)) list = [list];
+    list.forEach(function(op){ applyOp(store, op); ops.push(op); });
+    render(); scheduleSave();
+  }
+  function patch(id, fields, opt){
+    opt = opt || {};
+    var it = byId(id); if(!it) return;
+    var f = clone(fields);
+    if(!opt.noTouch) f.touchedAt = nowIso();
+    var before = {}; for(var k in f) before[k] = it[k];
+    commit({ t:"patch", id:id, f:f });
+    if(opt.undo) offerUndo(opt.undo, function(){ commit({ t:"patch", id:id, f:before }); });
+  }
+  function removeItem(id, label){
+    var it = byId(id); if(!it) return;
+    var copy = clone(it);
+    delete ui.expanded[id]; delete ui.panel[id];
+    commit({ t:"remove", id:id });
+    offerUndo(label || "Removed", function(){ commit({ t:"add", item:copy }); });
+  }
+
+  // ---------------- saving ----------------
+  function scheduleSave(){
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(flush, SAVE_DEBOUNCE_MS);
+    showStatus();
+  }
+  function outgoing(){
+    var out = clone(store);
+    out.version = 2; out.updated = nowIso();
+    out.meta = out.meta || {}; out.meta.lastBoardSaveAt = out.updated; out.meta.backend = "GitHub"; out.meta.lastEditCount = ops.length;
+    return out;
+  }
+  async function resync(){
+    var r = await storage().load();
+    var fixes = recoverDropped(r.store || {});
+    var fresh = normStore(r.store);
+    if(fixes.length) ops = fixes.concat(ops);
+    ops.forEach(function(op){ applyOp(fresh, op); });
+    store = fresh; rev = r.rev; lastSyncAt = Date.now();
+    render();
+  }
+  async function flush(){
+    clearTimeout(saveTimer); saveTimer = null;
+    if(!ops.length || saving) return;
+    saving = true; saveError = null; showStatus();
+    var sentCount = ops.length;
+    try {
+      sentCount = ops.length;
+      var res;
+      try { res = await storage().save(outgoing(), rev); }
+      catch(e){
+        // sha mismatch (the morning run committed meanwhile) or transient error: reload, replay our edits, try once more
+        await resync(); sentCount = ops.length;
+        res = await storage().save(outgoing(), rev);
+      }
+      rev = res.rev || rev; lastSyncAt = Date.now();
+      store.updated = nowIso(); store.meta.lastBoardSaveAt = store.updated;
+      ops = ops.slice(sentCount);
+      stashFields(store);
+    } catch(e){
+      saveError = (e && e.message) ? e.message : String(e);
+      console.error("save failed:", saveError);
+    }
+    saving = false; showStatus(); renderSub();
+    if(ops.length && !saveError) scheduleSave();
+  }
+  function showStatus(){
+    var el = $("status");
+    if(saveError){ el.className = "error"; el.innerHTML = "Save failed · " + ops.length + " unsaved <button class='act small' data-act='retry'>Retry</button>"; el.title = saveError; return; }
+    el.title = "";
+    if(saving){ el.className = "saving"; el.textContent = "Saving…"; return; }
+    if(ops.length){ el.className = "pending"; el.textContent = ops.length + " unsaved change" + (ops.length>1?"s":"") + "…"; return; }
+    el.className = "saved"; el.textContent = store ? "All changes saved" : "";
+  }
+
+  // ---------------- undo toast ----------------
+  var toastTimer = null, undoFn = null;
+  function toast(msg, withUndo){
+    var t = $("toast");
+    t.innerHTML = "<span>" + esc(msg) + "</span>" + (withUndo ? "<button data-act='undo'>Undo</button>" : "");
+    t.classList.remove("hidden");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ t.classList.add("hidden"); undoFn = null; }, withUndo ? 6000 : 3500);
+  }
+  function offerUndo(label, fn){ undoFn = fn; toast(label, true); }
+
+  // =====================================================================
+  // DERIVED VIEWS
+  // =====================================================================
+  function addedKey(it){ return it.addedAt || (it.dateAdded ? it.dateAdded + "T00:00:00Z" : ""); }
+  function computeNewKey(){ NEW_KEY = ""; store.items.forEach(function(it){ var k = addedKey(it); if(k > NEW_KEY) NEW_KEY = k; }); }
+  function isNew(it){ return NEW_KEY !== "" && addedKey(it) === NEW_KEY && it.status !== "done"; }
+  function isActive(it){ return it.status === "new" || it.status === "ongoing"; }
+  function isSnoozed(it){ return !!it.snoozeUntil && it.snoozeUntil > todayStr() && it.status !== "done"; }
+  function ageOf(it){ return daysSince(it.dateAdded); }
+  function untouchedDays(it){ return daysSince(it.touchedAt || it.addedAt || it.dateAdded); }
+  function isStale(it){ return it.status === "new" && !isSnoozed(it) && untouchedDays(it) >= STALE_DAYS; }
+  function inReview(it){ return isActive(it) && !isSnoozed(it) && (!!it.flag || isStale(it)); }
+  function dueState(it){
+    if(!it.dueDate || it.status === "done") return null;
+    var n = daysUntil(it.dueDate);
+    if(n < 0) return "overdue"; if(n <= 2) return "soon"; return "later";
+  }
+  function needsNudge(it){ return it.status === "delegated" && daysSince(it.delegatedAt || it.touchedAt || it.addedAt || it.dateAdded) >= NUDGE_DAYS; }
+
+  function anyFilter(){ var f = ui.f; return !!(f.q || f.high || f.aging || f.ongoing || f.due); }
+  function matches(it){
+    var f = ui.f;
+    if(f.q){
+      var hay = [it.text, it.context, it.notes, it.delegatedTo, SRC_LABEL[it.source]].join(" ").toLowerCase();
+      var words = f.q.toLowerCase().split(/\s+/).filter(Boolean);
+      for(var i=0;i<words.length;i++){ if(hay.indexOf(words[i]) < 0) return false; }
+    }
+    if(f.high && it.priority !== "high") return false;
+    if(f.aging && ageOf(it) < AGING_DAYS) return false;
+    if(f.ongoing && it.status !== "ongoing") return false;
+    if(f.due){ var n = it.dueDate ? daysUntil(it.dueDate) : null; if(n === null || n > 7) return false; }
+    return true;
+  }
+
+  function sortActive(a, b){
+    var so = { ongoing:0, new:1 };
+    if(so[a.status] !== so[b.status]) return so[a.status] - so[b.status];
+    var da = a.dueDate || "9999", db = b.dueDate || "9999";
+    if(da !== db) return da < db ? -1 : 1;
+    if(PRIO[a.priority] !== PRIO[b.priority]) return PRIO[a.priority] - PRIO[b.priority];
+    return (a.dateAdded || "") < (b.dateAdded || "") ? -1 : 1;
+  }
+  function sortDeleg(a, b){
+    var na = needsNudge(a) ? 0 : 1, nb = needsNudge(b) ? 0 : 1;
+    if(na !== nb) return na - nb;
+    if(PRIO[a.priority] !== PRIO[b.priority]) return PRIO[a.priority] - PRIO[b.priority];
+    return (a.dateAdded || "") < (b.dateAdded || "") ? -1 : 1;
+  }
+  function sortDone(a, b){ return (a.dateDone || "") > (b.dateDone || "") ? -1 : 1; }
+
+  function focusList(){
+    var out = [];
+    store.items.forEach(function(it){
+      if(!isActive(it) || isSnoozed(it) || inReview(it)) return;
+      var score = 0, reasons = [];
+      var ds = dueState(it);
+      if(ds === "overdue"){ score += 100; reasons.push(["overdue","Overdue"]); }
+      else if(ds === "soon"){ score += 80; reasons.push(["due","Due " + fmtShort(it.dueDate)]); }
+      if(it.priority === "high"){ score += 50; reasons.push(["high","High"]); }
+      if(ageOf(it) >= OLD_DAYS){ score += 40; reasons.push(["aging", ageOf(it) + "d old"]); }
+      if(isNew(it)){ score += 30; reasons.push(["new","New"]); }
+      if(it.status === "ongoing"){ score += 10; reasons.push(["ongoing","Ongoing"]); }
+      if(score >= 30) out.push({ it:it, score:score, reasons:reasons });
+    });
+    out.sort(function(a, b){ return b.score - a.score || sortActive(a.it, b.it); });
+    return out.slice(0, FOCUS_MAX);
+  }
+
+  // =====================================================================
+  // RENDERING
+  // =====================================================================
+  function btn(act, label, cls, extra){ return '<button class="act ' + (cls || "") + '" data-act="' + act + '"' + (extra || "") + '>' + label + '</button>'; }
+
+  function cardHTML(it, opts){
+    opts = opts || {};
+    var open = !!ui.expanded[it.id];
+    var age = ageOf(it), ds = dueState(it);
+    var cls = "card";
+    if(it.status === "done") cls += " done";
+    else if(ds === "overdue") cls += " overdue";
+    else if(isNew(it)) cls += " isnew";
+    else if(isActive(it) && age >= OLD_DAYS) cls += " stale";
+    else if(isActive(it) && age >= AGING_DAYS) cls += " aging";
+    if(open) cls += " open";
+
+    var h = '<div class="' + cls + '" data-id="' + esc(it.id) + '" data-card="1">';
+    h += '<div class="row1"><div class="badges">';
+    if(isNew(it)) h += '<span class="newbadge">NEW</span>';
+    h += '<span class="badge p-' + it.priority + '" data-act="prio" title="Click to change priority">' + it.priority.toUpperCase() + '</span>';
+    var pl = { ongoing:"Ongoing", delegated:"Delegated", done:"Done" }[it.status];
+    if(pl && it.status !== "delegated") h += '<span class="pill ' + it.status + '">' + pl + '</span>';
+    if(opts.showSource) h += '<span class="tag-src">' + SRC_LABEL[it.source] + '</span>';
+    h += '</div><div class="ctext">' + esc(it.text) + '</div><div class="right">';
+    if(ds) h += '<span class="duechip ' + (ds === "later" ? "" : ds) + '">' + (ds === "overdue" ? "Overdue " : "Due ") + esc(fmtShort(it.dueDate)) + '</span>';
+    var ageCls = it.status === "done" ? "" : (age >= OLD_DAYS ? "stale" : age >= AGING_DAYS ? "aging" : "");
+    h += '<span class="age ' + ageCls + '">' + (it.status === "done" ? ("done " + esc(fmtShort(it.dateDone))) : (age === 0 ? "today" : age + "d")) + '</span>';
+    h += '</div></div>';
+
+    var r2 = [];
+    if(it.context) r2.push('<span class="ctx">' + esc(it.context) + '</span>');
+    if(it.status === "delegated" && it.delegatedTo){
+      r2.push('<span class="deleg">→ ' + esc(it.delegatedTo) + '</span>');
+      if(needsNudge(it)) r2.push('<span class="nudge">Check in? ' + daysSince(it.delegatedAt || it.touchedAt || it.addedAt || it.dateAdded) + 'd</span>');
+    }
+    if(isSnoozed(it)) r2.push('<span class="ico" title="Snoozed">💤 until ' + esc(fmtShort(it.snoozeUntil)) + '</span>');
+    if(it.notes) r2.push('<span class="ico" title="Has notes">📝</span>');
+    if(it.link) r2.push('<span class="ico" title="Has source link">🔗</span>');
+    if(r2.length) h += '<div class="row2">' + r2.join("") + '</div>';
+
+    if(open) h += detailHTML(it);
+    h += '</div>';
+    return h;
+  }
+
+  function detailHTML(it){
+    var h = '<div class="detail" data-detail="1"><div class="actions">';
+    if(it.status === "new") h += btn("start", "Start", "primary") + btn("done", "Done") + btn("delegate", "Delegate") + btn("snooze", "Snooze");
+    else if(it.status === "ongoing") h += btn("done", "Mark done", "primary") + btn("pause", "Pause", "ghost") + btn("delegate", "Delegate") + btn("snooze", "Snooze");
+    else if(it.status === "delegated") h += btn("done", "Mark done", "primary") + btn("checkin", "Checked in") + btn("takeback", "Take back", "ghost");
+    else if(it.status === "done") h += btn("reopen", "Reopen", "ghost");
+    if(isSnoozed(it)) h += btn("unsnooze", "Unsnooze", "ghost");
+    h += btn("remove", "Remove", "danger push");
+    h += '</div>';
+
+    var pn = ui.panel[it.id];
+    if(pn === "delegate"){
+      h += '<div class="inline"><span class="lbl">Delegate to</span><input type="text" data-in="delegate" placeholder="Name" value="' + esc(it.delegatedTo || "") + '">' + btn("delegate-save", "Save", "primary small") + btn("panel-close", "Cancel", "ghost small") + '</div>';
+    } else if(pn === "snooze"){
+      h += '<div class="inline"><span class="lbl">Snooze until</span>' + btn("snz-1", "Tomorrow", "small") + btn("snz-mon", "Next Monday", "small") + btn("snz-7", "1 week", "small") +
+           '<input type="date" data-in="snooze" min="' + addDays(1) + '">' + btn("panel-close", "Cancel", "ghost small") + '</div>';
+    }
+
+    if(it.status !== "done"){
+      h += '<div class="fields"><label>Due</label><div class="frow2"><input type="date" data-in="due" value="' + esc(it.dueDate || "") + '">';
+      if(it.dueDate) h += btn("due-clear", "Clear", "ghost small");
+      h += '</div>';
+      h += '<label>Source</label><div class="frow2">';
+      h += it.link ? '<a class="link" href="' + esc(it.link) + '" target="_blank" rel="noopener noreferrer">Open original ↗</a>' : '<span style="color:#9aa1ad">No link captured</span>';
+      h += '</div></div>';
+    }
+    h += '<textarea class="notes" data-in="notes" data-keep="notes-' + esc(it.id) + '" placeholder="Notes — e.g. waiting on Greg, sent follow-up Tue…">' + esc(it.notes || "") + '</textarea>';
+    h += '</div>';
+    return h;
+  }
+
+  function renderSub(){
+    if(!store) return;
+    var u = store.updated ? new Date(store.updated) : null;
+    var s = "Updated " + (u && !isNaN(u) ? u.toLocaleString([], { month:"short", day:"numeric", hour:"2-digit", minute:"2-digit" }) : "—");
+    $("sub").textContent = s + " · stored in " + storage().name;
+  }
+
+  function renderStats(){
+    var items = store.items;
+    var open = items.filter(isActive), deleg = items.filter(function(i){ return i.status === "delegated"; });
+    var newCount = open.filter(isNew).length;
+    var aging = open.filter(function(i){ return !isSnoozed(i) && ageOf(i) >= AGING_DAYS; }).length;
+    var dueSoon = items.filter(function(i){ var d = dueState(i); return d === "overdue" || d === "soon"; }).length;
+    var overdue = items.filter(function(i){ return dueState(i) === "overdue"; }).length;
+    var doneWeek = items.filter(function(i){ return i.status === "done" && i.dateDone && daysSince(i.dateDone) < 7; }).length;
+    var addedWeek = items.filter(function(i){ return daysSince(i.dateAdded) < 7; }).length;
+    var recentDone = items.filter(function(i){ return i.status === "done" && i.dateDone && daysSince(i.dateDone) < 30; });
+    var avg = recentDone.length ? recentDone.reduce(function(s, i){ return s + Math.max(0, daysSince(i.dateAdded) - daysSince(i.dateDone)); }, 0) / recentDone.length : null;
+    var nudges = deleg.filter(needsNudge).length;
+    var snoozed = items.filter(isSnoozed).length;
+
+    var h = "";
+    if(newCount) h += '<span class="chip new">🆕 <b>' + newCount + '</b> new this briefing</span>';
+    h += '<span class="chip"><b>' + open.length + '</b> open</span>';
+    if(overdue) h += '<span class="chip alert">⏰ <b>' + overdue + '</b> overdue</span>';
+    else if(dueSoon) h += '<span class="chip warn">📅 <b>' + dueSoon + '</b> due soon</span>';
+    if(aging) h += '<span class="chip warn">⚠️ <b>' + aging + '</b> aging 7d+</span>';
+    h += '<span class="chip">👥 <b>' + deleg.length + '</b> delegated' + (nudges ? ' · ' + nudges + ' need check-in' : '') + '</span>';
+    if(snoozed) h += '<span class="chip">💤 <b>' + snoozed + '</b> snoozed</span>';
+    h += '<span class="chip good">✅ <b>' + doneWeek + '</b> done this week</span>';
+    h += '<span class="chip">➕ <b>' + addedWeek + '</b> added this week</span>';
+    if(avg !== null) h += '<span class="chip" title="Average days from added to done, last 30 days">⏱ <b>' + avg.toFixed(1) + '</b> days to done</span>';
+    $("stats").innerHTML = h;
+  }
+
+  function renderFocus(){
+    if(anyFilter()) return "";
+    var list = focusList(); if(!list.length) return "";
+    var h = '<section class="panel focus"><div class="panel-head"><h2>🎯 Focus now</h2><span class="hint">Overdue, due soon, high priority, aging and new — top ' + FOCUS_MAX + '</span></div>';
+    list.forEach(function(x){
+      var it = x.it;
+      h += '<div class="frow" data-id="' + esc(it.id) + '">';
+      x.reasons.slice(0, 2).forEach(function(r){ h += '<span class="reason ' + r[0] + '">' + esc(r[1]) + '</span>'; });
+      h += '<span class="ftext" data-act="goto" title="' + esc(it.text) + '">' + esc(it.text) + '</span>';
+      h += '<span class="tag-src">' + SRC_LABEL[it.source] + '</span>';
+      h += btn("done", "Done", "small");
+      h += '</div>';
+    });
+    return h + '</section>';
+  }
+
+  function renderReview(){
+    var list = store.items.filter(function(it){ return inReview(it) && matches(it); });
+    if(!list.length) return "";
+    var h = '<section class="panel review"><div class="panel-head" data-act="toggle-review" style="cursor:pointer"><h2>🧹 Review (' + list.length + ')</h2><span class="hint">Untouched ' + STALE_DAYS + '+ days or flagged as a possible duplicate. Keep it or dismiss it.</span><span class="spacer"></span><span class="hint">' + (ui.reviewOpen ? "Hide" : "Show") + '</span></div>';
+    if(ui.reviewOpen){
+      list.sort(sortActive).forEach(function(it){
+        var reason = it.flag ? '<span class="reason flag">' + esc(it.flag.length > 60 ? it.flag.slice(0, 60) + "…" : it.flag) + '</span>'
+                             : '<span class="reason stale">Untouched ' + untouchedDays(it) + 'd</span>';
+        h += '<div class="rrow" data-id="' + esc(it.id) + '"><span class="badge p-' + it.priority + '" data-act="prio">' + it.priority.toUpperCase() + '</span>';
+        h += '<div class="rtext"><div>' + esc(it.text) + '</div><div class="rsub">' + SRC_LABEL[it.source] + (it.context ? " · " + esc(it.context) : "") + '</div></div>';
+        h += reason + btn("keep", "Keep", "small") + btn("done", "Done", "small") + btn("dismiss", "Dismiss", "danger small") + '</div>';
+      });
+    }
+    return h + '</section>';
+  }
+
+  function renderColumns(){
+    var h = '<div class="board-cols">';
+    SOURCES.forEach(function(s){
+      var mine = store.items.filter(function(it){ return it.source === s.key; });
+      var act = mine.filter(function(it){ return isActive(it) && !isSnoozed(it) && !inReview(it) && matches(it); }).sort(sortActive);
+      var dlg = mine.filter(function(it){ return it.status === "delegated" && !isSnoozed(it) && matches(it); }).sort(sortDeleg);
+      var snz = mine.filter(function(it){ return isSnoozed(it) && matches(it); }).sort(sortActive);
+      var agingN = act.filter(function(it){ return ageOf(it) >= AGING_DAYS; }).length;
+      var collapsed = !!ui.collapsed[s.key];
+      var na = act.filter(isNew), oa = act.filter(function(it){ return !isNew(it); });
+
+      h += '<section class="col' + (collapsed ? " collapsed" : "") + '" data-col="' + s.key + '">';
+      h += '<div class="col-head" data-act="toggle-col"><span class="caret">▼</span><h2>' + s.label + '</h2>';
+      if(agingN) h += '<span class="mini aging" title="Open 7+ days">' + agingN + ' aging</span>';
+      if(snz.length && !ui.f.snoozed) h += '<span class="mini snz" title="Snoozed">💤 ' + snz.length + '</span>';
+      h += '<span class="count">' + act.length + '</span></div><div class="col-body">';
+      if(!act.length && !dlg.length && !(ui.f.snoozed && snz.length)){
+        h += '<div class="empty">' + (anyFilter() ? "No matches." : "Nothing here.") + '</div>';
+      } else {
+        na.forEach(function(it){ h += cardHTML(it); });
+        if(na.length && oa.length) h += '<div class="new-divider">Earlier</div>';
+        oa.forEach(function(it){ h += cardHTML(it); });
+        if(dlg.length){ h += '<div class="sub-head">Delegated <span>' + dlg.length + '</span></div>'; dlg.forEach(function(it){ h += cardHTML(it); }); }
+        if(ui.f.snoozed && snz.length){ h += '<div class="sub-head snz">Snoozed <span>' + snz.length + '</span></div>'; snz.forEach(function(it){ h += cardHTML(it); }); }
+      }
+      h += '</div></section>';
+    });
+    return h + '</div>';
+  }
+
+  function renderDone(){
+    var done = store.items.filter(function(it){ return it.status === "done" && matches(it); }).sort(sortDone);
+    var h = '<section><div class="done-head" data-act="toggle-done"><span class="caret">' + (ui.doneOpen ? "▼" : "▶") + '</span><h2>✅ Done (' + done.length + ')</h2></div>';
+    if(ui.doneOpen){
+      var shown = ui.doneAll ? done : done.slice(0, DONE_SHOW);
+      h += shown.length ? '<div class="done-grid">' + shown.map(function(it){ return cardHTML(it, { showSource:true }); }).join("") + '</div>' : '<div class="empty">Nothing completed yet.</div>';
+      if(done.length > shown.length) h += '<div style="margin-top:8px">' + btn("done-all", "Show all " + done.length, "ghost small") + '</div>';
+    }
+    return h + '</section>';
+  }
+
+  // Preserve focus/caret in a field being typed into across re-renders.
+  function captureFocus(){
+    var a = document.activeElement;
+    if(!a || !a.getAttribute) return null;
+    var card = a.closest && a.closest("[data-id]");
+    var key = a.getAttribute("data-in");
+    if(!card || !key) return null;
+    return { id: card.getAttribute("data-id"), key: key, value: a.value, s: a.selectionStart, e: a.selectionEnd };
+  }
+  function restoreFocus(f){
+    if(!f) return;
+    var card = document.querySelector('#board .card[data-id="' + (window.CSS && CSS.escape ? CSS.escape(f.id) : f.id) + '"]');
+    if(!card) return;
+    var el = card.querySelector('[data-in="' + f.key + '"]');
+    if(!el) return;
+    el.value = f.value; el.focus();
+    try { if(f.s != null) el.setSelectionRange(f.s, f.e); } catch(e){}
+  }
+
+  function render(){
+    if(!store) return;
+    computeNewKey();
+    var keep = captureFocus();
+    renderSub(); renderStats(); showStatus();
+    $("board").innerHTML = renderFocus() + renderReview() + renderColumns() + renderDone();
+    restoreFocus(keep);
+    var tgs = document.querySelectorAll("[data-tog]");
+    for(var i=0;i<tgs.length;i++){ var k = tgs[i].getAttribute("data-tog"); tgs[i].classList.toggle("on", !!ui.f[k === "snoozed" ? "snoozed" : k]); }
+    $("foot").innerHTML = "Store: " + store.items.length + " items in GitHub (" + esc(GITHUB.repo + "/" + GITHUB.path) + ") · <a class='link' href='" + HISTORY_URL + "' target='_blank' rel='noopener noreferrer'>Change history ↗</a> · Click a card to open it; click the priority badge to change it.";
+  }
+
+  // =====================================================================
+  // ACTIONS
+  // =====================================================================
+  function gotoCard(id){
+    var it = byId(id); if(!it) return;
+    ui.expanded[id] = true; ui.collapsed[it.source] = false; lsSet("collapsed", ui.collapsed);
+    if(ui.f.q || ui.f.high || ui.f.aging || ui.f.ongoing || ui.f.due){ /* keep filters */ }
+    render();
+    var el = document.querySelector('#board .board-cols .card[data-id="' + (window.CSS && CSS.escape ? CSS.escape(id) : id) + '"]');
+    if(el){ if(el.scrollIntoView) el.scrollIntoView({ behavior:"smooth", block:"center" }); el.classList.add("flash"); }
+  }
+
+  function snoozeTo(id, date){
+    if(!date) return;
+    delete ui.panel[id]; ui.expanded[id] = false;
+    patch(id, { snoozeUntil: date }, { undo: "Snoozed until " + fmtShort(date) });
+  }
+
+  function doDelegate(id, card){
+    var inp = card.querySelector('[data-in="delegate"]');
+    var name = inp ? inp.value.trim() : "";
+    if(!name){ if(inp) inp.focus(); return; }
+    delete ui.panel[id];
+    patch(id, { status:"delegated", delegatedTo:name, delegatedAt:nowIso(), dateDone:null }, { undo: "Delegated to " + name });
+  }
+
+  // Duplicate finder (runs in the browser, no AI): flags the newer of two open items whose
+  // wording overlaps strongly. The morning briefing does the smarter, meaning-based check.
+  var STOP = "the and for with from that this have will into your about what when then them they their there are was were has had not but can all any our out per via also just need needs make sure please".split(" ");
+  function words(s){ return (s || "").toLowerCase().replace(/[^a-z0-9$]+/g, " ").split(/\s+/).filter(function(w){ return w.length > 2 && STOP.indexOf(w) < 0; }); }
+  function overlap(a, b){
+    var A = {}, B = {}, inter = 0, uni = 0, k;
+    a.forEach(function(w){ A[w] = 1; }); b.forEach(function(w){ B[w] = 1; });
+    for(k in A){ uni++; if(B[k]) inter++; }
+    for(k in B){ if(!A[k]) uni++; }
+    return uni ? inter / uni : 0;
+  }
+  function findDuplicates(){
+    var open = store.items.filter(function(it){ return it.status !== "done" && !it.flag; });
+    if(open.length < 2){ toast("Not enough open items to compare."); return; }
+    var w = open.map(function(it){ return words(it.text); }), list = [], flagged = {};
+    for(var i=0;i<open.length;i++){
+      for(var j=i+1;j<open.length;j++){
+        if(overlap(w[i], w[j]) < 0.5) continue;
+        var older = addedKey(open[i]) <= addedKey(open[j]) ? open[i] : open[j];
+        var newer = older === open[i] ? open[j] : open[i];
+        if(flagged[newer.id]) continue;
+        flagged[newer.id] = 1;
+        list.push({ t:"patch", id:newer.id, f:{ flag: "Possible duplicate of: " + older.text } });
+      }
+    }
+    if(list.length){ ui.reviewOpen = true; commit(list); toast(list.length + " possible duplicate" + (list.length>1?"s":"") + " moved to Review."); }
+    else toast("No near-identical items found.");
+  }
+
+  async function refresh(quiet){
+    if(saving) return;
+    try {
+      if(ops.length) await flush();
+      if(saveError) return;
+      await resync();
+      if(!quiet) toast("Up to date with GitHub.");
+    } catch(e){ if(!quiet) toast("Couldn't refresh: " + e.message); if(e.status === 401) showTokenDialog("Your token was rejected (expired or revoked)."); }
+  }
+
+  function showTokenDialog(msg){
+    var has = !!getToken();
+    showModal("<h3>Connect to GitHub</h3><div class='msub'>" + (msg ? esc(msg) + " " : "") +
+      "This board reads and writes <b>" + esc(GITHUB.owner + "/" + GITHUB.repo) + "</b> using a fine-grained token that is stored only in this browser.</div>" +
+      "<ol><li>Open <a class='link' href='https://github.com/settings/personal-access-tokens/new' target='_blank' rel='noopener noreferrer'>GitHub → new fine-grained token</a></li>" +
+      "<li>Repository access: <b>Only select repositories → " + esc(GITHUB.repo) + "</b></li>" +
+      "<li>Repository permissions: <b>Contents → Read and write</b></li>" +
+      "<li>Generate, copy, and paste it below</li></ol>" +
+      "<input type='password' id='tokInput' placeholder='github_pat_…' autocomplete='off'>" +
+      "<div class='warn'>Only paste it on this page. Anyone with this browser profile could use it, so don't connect on a shared computer.</div>" +
+      "<div class='mact'>" + (has ? "<button class='act danger' data-act='tok-forget'>Disconnect</button>" : "") +
+      "<button class='act' data-act='modal-close'>Cancel</button><button class='act primary' data-act='tok-save'>Connect</button></div>");
+    var inp = $("tokInput"); if(inp) inp.focus();
+  }
+
+  function showModal(html){ var m = $("modal"); m.innerHTML = "<div class='modal-box'>" + html + "</div>"; m.classList.remove("hidden"); }
+  function hideModal(){ var m = $("modal"); m.classList.add("hidden"); m.innerHTML = ""; }
+
+  // =====================================================================
+  // EVENTS
+  // =====================================================================
+  document.addEventListener("click", function(ev){
+    var t = ev.target;
+    var actEl = t.closest ? t.closest("[data-act]") : null;
+    var act = actEl ? actEl.getAttribute("data-act") : null;
+
+    // global (not item-bound)
+    if(act === "undo"){ var fn = undoFn; undoFn = null; $("toast").classList.add("hidden"); if(fn) fn(); return; }
+    if(act === "retry"){ saveError = null; flush(); return; }
+    if(act === "toggle-done"){ ui.doneOpen = !ui.doneOpen; lsSet("doneOpen", ui.doneOpen); render(); return; }
+    if(act === "done-all"){ ui.doneAll = true; render(); return; }
+    if(act === "toggle-review"){ ui.reviewOpen = !ui.reviewOpen; lsSet("reviewOpen", ui.reviewOpen); render(); return; }
+    if(act === "toggle-col"){ var col = actEl.closest("[data-col]").getAttribute("data-col"); ui.collapsed[col] = !ui.collapsed[col]; lsSet("collapsed", ui.collapsed); render(); return; }
+    if(act === "modal-close"){ hideModal(); return; }
+    if(act === "tok-save"){ var tv = ($("tokInput") || {}).value || ""; tv = tv.trim(); if(!tv){ $("tokInput").focus(); return; } setToken(tv); hideModal(); init(); return; }
+    if(act === "tok-forget"){ setToken(""); hideModal(); store = null; $("board").innerHTML = ""; $("stats").innerHTML = ""; showBig("Disconnected. This browser no longer has access.", false, true); return; }
+    if(act === "connect"){ showTokenDialog(); return; }
+    if(act === "copy-draft"){ var ta = $("draftText"); if(ta){ ta.select(); try { navigator.clipboard.writeText(ta.value); } catch(e){ document.execCommand && document.execCommand("copy"); } toast("Copied to clipboard."); } return; }
+    if(t.id === "modal"){ hideModal(); return; }
+
+    var host = t.closest ? t.closest("[data-id]") : null;
+    if(!host) return;
+    var id = host.getAttribute("data-id");
+    var it = byId(id); if(!it) return;
+
+    if(!act){
+      // click on card body toggles open/closed (but not inside the detail area or form fields)
+      if(host.getAttribute("data-card") && !(t.closest && t.closest("[data-detail]")) && t.tagName !== "A"){
+        ui.expanded[id] = !ui.expanded[id]; if(!ui.expanded[id]) delete ui.panel[id]; render();
+      }
+      return;
+    }
+    switch(act){
+      case "prio":      patch(id, { priority: PRIO_NEXT[it.priority] }); break;
+      case "goto":      gotoCard(id); break;
+      case "start":     patch(id, { status:"ongoing" }); break;
+      case "pause":     patch(id, { status:"new" }); break;
+      case "done":      delete ui.expanded[id]; patch(id, { status:"done", dateDone: todayStr(), flag:null }, { undo: "Marked done" }); break;
+      case "reopen":    patch(id, { status:"new", dateDone:null }); break;
+      case "takeback":  patch(id, { status:"new", delegatedTo:null, delegatedAt:null }, { undo: "Taken back" }); break;
+      case "checkin":   patch(id, { delegatedAt: nowIso() }); toast("Check-in logged. Nudge resets in " + NUDGE_DAYS + " days."); break;
+      case "delegate":  ui.panel[id] = ui.panel[id] === "delegate" ? null : "delegate"; render(); var di = document.querySelector('#board .card[data-id="' + id + '"] [data-in="delegate"]'); if(di) di.focus(); break;
+      case "delegate-save": doDelegate(id, host); break;
+      case "snooze":    ui.panel[id] = ui.panel[id] === "snooze" ? null : "snooze"; render(); break;
+      case "snz-1":     snoozeTo(id, addDays(1)); break;
+      case "snz-mon":   snoozeTo(id, nextMonday()); break;
+      case "snz-7":     snoozeTo(id, addDays(7)); break;
+      case "unsnooze":  patch(id, { snoozeUntil:null }); break;
+      case "panel-close": delete ui.panel[id]; render(); break;
+      case "due-clear": patch(id, { dueDate:null }); break;
+      case "keep":      patch(id, { flag:null }); toast("Kept. It's back in its column."); break;
+      case "dismiss":   removeItem(id, "Dismissed"); break;
+      case "remove":    removeItem(id, "Removed"); break;
+    }
+  });
+
+  document.addEventListener("change", function(ev){
+    var t = ev.target, key = t.getAttribute && t.getAttribute("data-in");
+    if(!key) return;
+    var host = t.closest("[data-id]"); if(!host) return;
+    var id = host.getAttribute("data-id"), it = byId(id); if(!it) return;
+    if(key === "due"){ patch(id, { dueDate: t.value || null }); }
+    else if(key === "snooze"){ snoozeTo(id, t.value); }
+    else if(key === "notes"){ if((it.notes || "") !== t.value) patch(id, { notes: t.value }); }
+  });
+
+  document.addEventListener("keydown", function(ev){
+    var t = ev.target, key = t.getAttribute && t.getAttribute("data-in");
+    if(key === "delegate"){
+      var host = t.closest("[data-id]");
+      if(ev.key === "Enter"){ ev.preventDefault(); doDelegate(host.getAttribute("data-id"), host); }
+      if(ev.key === "Escape"){ delete ui.panel[host.getAttribute("data-id")]; render(); }
+    }
+    if(ev.key === "Escape" && !$("modal").classList.contains("hidden")) hideModal();
+  });
+
+  $("q").addEventListener("input", function(){ ui.f.q = this.value.trim(); render(); });
+  var togs = document.querySelectorAll("[data-tog]");
+  for(var i=0;i<togs.length;i++){
+    togs[i].addEventListener("click", function(){
+      var k = this.getAttribute("data-tog");
+      ui.f[k] = !ui.f[k];
+      if(k === "snoozed") lsSet("showSnoozed", ui.f.snoozed);
+      render();
+    });
+  }
+  $("btnDupes").addEventListener("click", findDuplicates);
+  $("btnRefresh").addEventListener("click", function(){ refresh(false); });
+  $("btnToken").addEventListener("click", function(){ showTokenDialog(); });
+  document.addEventListener("keydown", function(ev){ if(ev.key === "Enter" && ev.target && ev.target.id === "tokInput"){ ev.preventDefault(); var b = document.querySelector('[data-act="tok-save"]'); if(b) b.click(); } });
+  document.addEventListener("visibilitychange", function(){
+    if(document.visibilityState === "hidden" && ops.length) flush();
+    // coming back to the tab: pick up the morning run / other devices if we have nothing pending
+    if(document.visibilityState === "visible" && store && !ops.length && !saving && Date.now() - lastSyncAt > 60000) refresh(true);
+  });
+  window.addEventListener("beforeunload", function(){ if(ops.length) flush(); });
+
+  // =====================================================================
+  // BOOT
+  // =====================================================================
+  function showBig(msg, retry, connect){
+    var el = $("bigmsg"); el.classList.remove("hidden");
+    el.innerHTML = esc(msg) + "<br><br>" + (retry ? '<button class="act primary" id="retryLoad">Retry</button> ' : "") +
+      (connect ? '<button class="act primary" data-act="connect">Connect GitHub</button>' : "");
+    if(retry) $("retryLoad").addEventListener("click", init);
+  }
+  async function init(){
+    $("bigmsg").classList.add("hidden");
+    $("sub").textContent = "Loading…";
+    try {
+      var r = await storage().load();
+      var fixes = recoverDropped(r.store || {});
+      store = normStore(r.store); rev = r.rev; lastSyncAt = Date.now();
+      if(fixes.length){ commit(fixes); toast("Restored notes/dates on " + fixes.length + " item" + (fixes.length>1?"s":"") + " that a background update had dropped."); }
+      else render();
+      stashFields(store);
+    } catch(e){
+      $("sub").textContent = "";
+      console.error(e);
+      if(e.status === 401){ showBig("GitHub rejected the saved token (expired or revoked).", false, true); showTokenDialog("Your token was rejected."); }
+      else if(e.status === 403 || e.status === 404){ showBig("This token can't open " + GITHUB.owner + "/" + GITHUB.repo + "/" + GITHUB.path + " (" + e.status + "). Make sure it has access to that repo with Contents: Read and write.", true, true); }
+      else showBig("Couldn't load your action items from GitHub. " + ((e && e.message) || ""), true, false);
+    }
+  }
+  window.__aib = { get store(){ return store; }, get ops(){ return ops; }, get rev(){ return rev; }, flush: flush, ui: ui };
+
+  if(getToken()) init();
+  else { $("sub").textContent = ""; showBig("Connect this board to your GitHub data to get started.", false, true); showTokenDialog(); }
+})();
+</script>
+</body>
+</html>
